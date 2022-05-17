@@ -16,4 +16,6 @@ enter the followoing commands to recreate the vpc
 terraform init
 
 terraform plan -var-file=/path/to/values.tfvars
+
+terraform apply -var-file=/path/to/values.tfvars
 ```

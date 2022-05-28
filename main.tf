@@ -7,104 +7,64 @@ terraform {
   }
 }
 
+locals {
+  createdAt = formatdate("YYYY-MM-DD", timestamp())
+}
 # Configure the AWS Provider
 provider "aws" {
   region = "us-west-2"
-}
 
-# Create a VPC
-resource "aws_vpc" "sr-vpc" {
-  cidr_block = var.vpc_cidr
-  tags = {
-    Name = "sr-new2-vpc"
-  }
-}
-
-resource "aws_internet_gateway" "gw" {
-  vpc_id = aws_vpc.sr-vpc.id
-
-  tags = {
-    Name = "sr-igw"
-  }
-}
-
-resource "aws_subnet" "private_subnets" {
-  count      = length(var.prv_cidrs)
-  vpc_id     = aws_vpc.sr-vpc.id
-  cidr_block = var.prv_cidrs[count.index]
-
-  tags = {
-    Name = "sr-private_subnet${count.index}"
-  }
-}
-
-resource "aws_subnet" "public_subnets" {
-  count      = length(var.pub_cidrs)
-  vpc_id     = aws_vpc.sr-vpc.id
-  cidr_block = var.pub_cidrs[count.index]
-
-  tags = {
-    Name = "sr-public_subnet${count.index}"
-  }
-}
-
-resource "aws_eip" "nat_eip" {
-  depends_on = [aws_internet_gateway.gw]
-  tags = {
-    Name = "sr-eip"
-  }
-}
-
-resource "aws_nat_gateway" "nat_gw" {
-  allocation_id = aws_eip.nat_eip.id
-  subnet_id     = aws_subnet.public_subnets[0].id
-
-  tags = {
-    Name = "sr-nat-gw"
-  }
-
-  # To ensure proper ordering, it is recommended to add an explicit dependency
-  # on the Internet Gateway for the VPC.
-  depends_on = [aws_internet_gateway.gw]
-}
-
-
-resource "aws_route_table" "prv_rTable" {
-  vpc_id = aws_vpc.sr-vpc.id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat_gw.id
-  }
-
-  tags = {
-    Name = "sr-private-rTable"
-  }
-}
-
-resource "aws_route_table_association" "prv_rTable_subnets" {
-  count          = length(aws_subnet.private_subnets)
-  subnet_id      = aws_subnet.private_subnets[count.index].id
-  route_table_id = aws_route_table.prv_rTable.id
-}
-
-
-resource "aws_route_table" "pub_rTable" {
-  vpc_id = aws_vpc.sr-vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.gw.id
-  }
-
-  tags = {
-    Name = "sr-public-rTable"
+    default_tags {
+    tags = {
+      creation_date  = local.now
+    }
   }
 }
 
 
-resource "aws_route_table_association" "pub_rTable_subnets" {
-  count          = length(aws_subnet.public_subnets)
-  subnet_id      = aws_subnet.public_subnets[count.index].id
-  route_table_id = aws_route_table.pub_rTable.id
+module "vpc-mod" {
+
+  source = "./modules/vpc-module" 
+
+  vpc_cidr    = "172.10.0.0/16"
+  prv_cidrs   = ["172.10.0.0/24","172.10.1.0/24","172.10.2.0/24"]
+  pub_cidrs   = ["172.10.3.0/24","172.10.4.0/24","172.10.5.0/24"]
+  avzone      = ["us-west-2a", "us-west-2b", "us-west-2c"]
+  
 }
+
+module "sec-mod" {
+
+  source = "./modules/sec-group-module" 
+
+  vpc_id = module.vpc-mod.vpc_id
+
+  depends_on = [
+    module.vpc-mod ]
+}
+
+module "launch-mod" {
+
+  source = "./modules/launch-conf-module" 
+
+  name  = "sr-config"
+  instance_type = "t2.micro"
+  sg_id = module.sec-mod.id
+
+  depends_on = [
+    module.sec-mod
+  ]
+
+}
+
+# module "autoscaling-mod"{
+#   source = "./modules/autoscaling-module"
+
+#   name = "sr-autosc"
+#   launch-name = module.launch-mod.name # aws_launch_configuration.as_conf.name
+#   min = 1
+#   max = 2
+#   desired = 2
+#   av_zones = module.vpc-mod.av_ids
+ 
+# }

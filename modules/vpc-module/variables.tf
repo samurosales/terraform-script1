@@ -1,3 +1,4 @@
+
 variable "vpc_cidr" {
   type = string
 }
@@ -11,6 +12,8 @@ variable "pub_cidrs" {
 }
 
 
-
+variable "avzone" {
+  type = list(string)
+}
 
 

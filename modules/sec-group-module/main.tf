@@ -1,7 +1,7 @@
 resource "aws_security_group" "allow_trafic" {
   name        = "sr-allow_trafic"
   description = "Allow inbound traffic"
-  # vpc_id      = var.vpc_id
+  vpc_id      = var.vpc_id
 
     dynamic "ingress" {
         for_each = var.ports_list

@@ -9,7 +9,11 @@ resource "aws_autoscaling_group" "sr-auto" {
 
   # availability_zones   = data.aws_availability_zones.all.names
   vpc_zone_identifier = var.av_zones
-  
+  tag {
+    key                 = "Name"
+    value               = "sr-instance"
+    propagate_at_launch = true
+  } 
 
   lifecycle {
     create_before_destroy = true

@@ -1,9 +1,16 @@
 output "vpc_id" {
-  value       = try(aws_vpc.sr-vpc.id, "")
+  value       = aws_vpc.sr-vpc.id
 }
 
-output "av_ids" {
+output "pr-subnets" {
   value = [
     for sbn in aws_subnet.private_subnets : sbn.id
+  ]
+}
+
+
+output "pu-subnets" {
+  value = [
+    for sbn in aws_subnet.public_subnets : sbn.id
   ]
 }

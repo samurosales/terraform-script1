@@ -1,0 +1,5 @@
+{
+    "yaml.schemas": {
+        "kubernetes://schema/v1%40namespace": "file:///home/samuelrosales/Documents/kube/file.yml"
+    }
+}

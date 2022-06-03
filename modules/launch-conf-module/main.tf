@@ -24,5 +24,7 @@ resource "aws_launch_configuration" "as_conf" {
   security_groups = [ var.sg_id ]
 
    user_data = "${file("${path.module}/user-data.sh")}"
-
+  # tags = {
+  #     name = "sr-instance"
+  # }
 }
